@@ -1,0 +1,20 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <p>welcome {{request.user}}</p><br>
+    <a href="{% url 'home' %}">create tweet</a><br><br> 
+    <a href="{% url 'friends' %}">view friend list</a><br><br>
+    <ul>
+    {% for post in posts %}
+        <li> {{post}} </li>
+    {% endfor %}
+</ul>     
+</body>
+</html> 
