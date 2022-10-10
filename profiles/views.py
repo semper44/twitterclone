@@ -1,17 +1,16 @@
-from multiprocessing import context
-import profile
-import re
-from django.dispatch import receiver
 from django.shortcuts import redirect, render
-
 from .models import Profile, Relationship
-from . forms import register_form
+from .forms import register_form
 from django.contrib.auth import authenticate, login,logout
-from hometweet.models import Tweet
-from django.contrib.auth.models import User
+from hometweet.models import Post
+from django.contrib.auth.models import User, Group
+from django.db.models import Q
+from itertools import chain
+from django.contrib.auth.decorators import login_required
+from guardian.shortcuts import assign_perm,get_group_perms
 
 
-# Create your views here.
+# abigails code
 def register_view(request):
     form = register_form(request.POST or None)
     if form.is_valid():
@@ -32,7 +31,12 @@ def login_view(request):
             return redirect("profile")
     return render(request, "profiles/login.html", {})
 
+def logout_view(request):
+    logout(request)
+    return redirect("login")
+
 '''view friends tweet view'''
+@login_required(login_url="login")
 def profile_view(request):
     idd = request.user.id
     print(idd)
@@ -40,7 +44,7 @@ def profile_view(request):
     friend = profiles.friends.all()
     posts = []
     for f in friend:
-        tweet = Tweet.objects.filter(id= f.id)
+        tweet = Post.objects.filter(id= f.id)
         for i in tweet:
             posts.append(i)
     context = {"posts":posts}
@@ -48,17 +52,20 @@ def profile_view(request):
     return render(request, "profiles/profile.html", context)
 
 '''my friends list''' 
-pals = []
+@login_required(login_url="login")
 def view_friends(request):
-    idd = request.user.id
-    profile= Profile.objects.get(id = idd)
-    print(profile)
-    friend =  profile.friends.all()
-    print(friend)
+    user = request.user
+    # print(idd)
+    profile = Profile.objects.get(user = user)
+    # print(profile)
+    friend = profile.friends.all()
+    for i in friend:
+        print(i.id)
     context = {"friend": friend}
     return render(request, "profiles/friends.html", context)
 
 '''find friends list'''
+@login_required(login_url="login")
 def find_friends(request):
     id = request.user.id
     all_profiles = Profile.objects.exclude(id = id)
@@ -86,31 +93,76 @@ def find_friends(request):
     }
     return render(request, "profiles/find_friends.html", context)
 
-def remove_friend_view(request):
-    idd = request.user.id
-    prof=Profile.objects.get(id = 4)
-    # rel = prof.relationship_set.
-    profiles = Relationship.objects.get(id= 3)
-    # rel = profiles.receiver_id.all()
-    # rel = profiles.filter
-    print(profiles.receiver_id)
-    # rel= profiles.status.all()
-    print(idd)
-    # rel = profiles.status.filter(id = id, status = "accept")
-    # print(rel)
+@login_required(login_url="login")
+def remove_friend_view(request, id):
+    if request.method == "POST":
+        user = request.user
+        print(user.id)
+        sender=Profile.objects.get(user = user)
+        receiver =Profile.objects.get(id = id)
+        rel = Relationship.objects.get(Q(sender=receiver, receiver= sender, status="accept") | Q(sender=sender, receiver=receiver, status="accept"))
+    
+        print(rel)
+        rel.delete()
+        return redirect("home")
     context = {"delete": "delete" }
     return render(request, "profiles/removefriends.html", context)
 
 
 
+@login_required(login_url="login")
 def add_friend_view(request, id):
     if "add" in request.POST:
         user = request.user
         friend = Profile.objects.get(user= user)
-        profiles = Profile.objects.get(id=5)
+        profiles = Profile.objects.get(id=id)
         # profiles = friend.friends.get(id=id)
         print(profiles)
         print(friend)
         Rel= Relationship.objects.create(sender = friend, receiver = profiles, status = "send")
     context = {"delete": "delete" }
     return render(request, "profiles/addfriends.html", context)
+
+
+
+def view_sent_request(request):
+    user = request.user
+    prof =  Profile.objects.get(user = user)
+    sent_request = Relationship.objects.filter(status ="send", sender= prof)
+    print(sent_request)
+    context= {"sent_request":sent_request}
+    return render(request,"profiles/removefriends.html", context)
+
+def view_received_request(request):
+    user = request.user 
+    prof =  Profile.objects.get(user = user)
+    received_request = Relationship.objects.filter(status ="send", receiver= prof)
+    print(received_request)
+    context= {"received_request":received_request}
+    return render(request,"profiles/received_request.html", context)
+
+def search_view(request):
+    if "query" in request.GET:
+        queries = request.GET.get("query")
+        profile = Profile.objects.filter(user__username__icontains = queries)
+        tweets = Post.objects.filter(content__icontains = queries)
+        results= chain(profile, tweets)
+    else:
+        results = Profile.objects.all().none
+
+    context = {"results":results}        
+    return render(request,"profiles/search.html", context)
+
+def block_user_view(request, id):
+    if request.method == "POST":
+       grouped = Group.objects.get(name="blockedusers")
+       friend = Profile.objects.get(id = id)
+       user = request.user
+       blocker = Profile.objects.get(user = user)
+       assign_perm("cant_view_profile", grouped, blocker)
+       print(friend)
+       friend.group.add(grouped)
+       friend.has_perm()
+
+    return render(request, "profiles/blockuser.html", {})
+

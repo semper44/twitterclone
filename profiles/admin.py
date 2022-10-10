@@ -1,7 +1,14 @@
-from cProfile import Profile
 from django.contrib import admin
-from .models import Profile, Relationship
+from .models import Profile, Relationship, blockedusers
+from guardian.admin import GuardedModelAdmin
 
 # Register your models here.
-admin.site.register(Profile)
-admin.site.register(Relationship)
+
+
+# class ProfileAdmin(GuardedModelAdmin):
+#     pass
+
+# admin.site.register(Profile,ProfileAdmin)
+# admin.site.register(Relationship)
+# admin.site.register(blockedusers)
+

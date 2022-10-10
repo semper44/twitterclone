@@ -10,7 +10,6 @@
     <p></p>
     <form action="" method="POST">
         {% csrf_token %}
-        <input type="hidden" name="Add"/>
         <button type="submit">Add</button>
         <a href="{% url 'friends' %}">cancel</a>
     </form>

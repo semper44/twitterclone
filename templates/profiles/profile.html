@@ -9,12 +9,20 @@
 </head>
 <body>
     <p>welcome {{request.user}}</p><br>
-    <a href="{% url 'home' %}">create tweet</a><br><br> 
+    <a target="_top" href="{% url 'make-tweet' %}">create tweet</a><hr> 
     <a href="{% url 'friends' %}">view friend list</a><br><br>
+    <a href="{% url 'logout' %}">logout</a><br><br>
+    <a href="{% url 'view_received_request' %}">received_request</a><br><br>
+    <a href="{% url 'groups' %}">create group</a><br><br>
     <ul>
     {% for post in posts %}
         <li> {{post}} </li>
     {% endfor %}
-</ul>     
-</body>
+    </ul>  
+
+    <form method="GET" action="{% url 'search' %}" class="search-form">
+        <input type="text" class="search" name="query" placeholder="search" value="{{request.GET.query}}">
+        <button type="submit">search</button>
+    </form>
+    
 </html> 

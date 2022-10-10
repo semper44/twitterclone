@@ -10,9 +10,10 @@
     <ul>
     {% for friends in friend %}
         <li>{{friends}}</li>
-        <a href="{% url 'removefriends' %}">remove friend</a><br><br>
+        <a href="{% url 'removefriends' friends.id %}">remove friend</a><br>
+        <a href="{% url 'blockuser' friends.id %}">block friend</a><br><br>
     {% endfor %}
     </ul>
-        
+
 </body>
 </html>
